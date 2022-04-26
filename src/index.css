@@ -1,10 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Sora&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu+Mono&display=swap');
 
 /* Colors */
 :root {
   --color-primary: #02759c;
   --color-primary-hover: #038bb8;
-  --color-bg: #1b1b1b;
+  --color-primary-light: #369ec0;
+  --color-bg: #1c1c1c;
   --text-primary: #ffffff;
 }
 
@@ -17,10 +19,25 @@
 
 /* Layout */
 .app-container {
-  padding: 16px;
+  position: relative;
+  padding: 32px 16px;
   min-height: 100vh;
   background: var(--color-bg);
   color: var(--text-primary);
+}
+
+.app-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  pointer-events: none;
+}
+
+.app-overlay>*+* {
+  margin-top: 16px;
 }
 
 .vertical-layout {
@@ -33,30 +50,48 @@
   margin-top: 16px;
 }
 
+.flex-space {
+  justify-content: space-between;
+}
+
+.grow {
+  flex: 1;
+}
+
+.h-align {
+  display: flex;
+  align-items: center;
+}
+
+.h-align>*+* {
+  margin-left: 16px;
+}
+
+.text-small {
+  font-family: 'Ubuntu Mono', monospace;
+  font-size: 1rem;
+}
 
 .video-container {
   display: inline-block;
   position: relative;
-  width: 400px;
-  height: 400px;
+  width: 320;
+  height: 320;
   border-radius: 2px;
   overflow: hidden;
+  background: #000;
 }
 
-/* Element styles */
 button {
-  display: inline-block;
-  width: 240px;
-  height: 40px;
+  padding: 8px 32px;
   border: none;
   border-radius: 2px;
   background: var(--color-primary);
   color: var(--text-primary);
-  transition: 0.2s;
+  transition: .2s;
 }
 
 button:hover {
-  transform: translateY(-2px);
   background: var(--color-primary-hover);
   cursor: pointer;
 }

@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import * as faceapi from 'face-api.js'
-import axios from 'axios'
 
 
 const WebcamVideo = () => {
-    const videoHeight = 400
-    const videoWidth = 400
+    const videoHeight = 320
+    const videoWidth = 320
 
     const [modelsLoaded, setModelsLoaded] = useState(false)
     const [mediaStream, setMediaStream] = useState()
@@ -18,7 +17,6 @@ const WebcamVideo = () => {
     useEffect(() => {
         Promise.all([
             faceapi.nets.tinyFaceDetector.loadFromUri("/models"),
-            // faceapi.nets.faceLandmark68Net.loadFromUri("/models"),
             faceapi.nets.faceRecognitionNet.loadFromUri("/models"),
             faceapi.nets.faceExpressionNet.loadFromUri("/models")
         ]).then(() => {
@@ -63,7 +61,6 @@ const WebcamVideo = () => {
             // Get detections
             const detections = await faceapi
                 .detectAllFaces(videoRef.current, new faceapi.TinyFaceDetectorOptions())
-                // .withFaceLandmarks()
                 .withFaceExpressions()
 
             // Resize detections
@@ -73,13 +70,12 @@ const WebcamVideo = () => {
                 displaySize
             );
 
+            // Draw to canvas
             if (canvasRef && canvasRef.current) {
-                // Draw to canvas
                 const canvas = canvasRef.current
                 const context = canvas.getContext("2d")
                 context.clearRect(0, 0, canvas.width, canvas.height);
                 faceapi.draw.drawDetections(canvas, resizedDetections);
-                // faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
                 faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
             }
         }
@@ -88,7 +84,7 @@ const WebcamVideo = () => {
             if (mediaStream && modelsLoaded) {
                 updateOverlay()
             }
-        }, 100)
+        }, 50)
 
         return () => clearInterval(interval)
     }, [mediaStream, modelsLoaded])
@@ -123,13 +119,20 @@ const WebcamVideo = () => {
 
         // Set loading true
         setLoadingNames(true)
+        setNames(null)
 
         // Make request
         const URL = 'http://127.0.0.1:5000/api'
-        axios.post(URL, { data: imageSrc })
-            .then(res => {
-                console.log('response: ', res)
-                const data = res.data
+
+        const requestOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: imageSrc })
+        }
+
+        fetch(URL, requestOptions)
+            .then(res => res.json())
+            .then(data => {
                 setNames(data.results)
                 setLoadingNames(false)
             })
@@ -139,34 +142,52 @@ const WebcamVideo = () => {
             })
     }
 
-    let displayNames = "No known faces detected"
-    if (loadingNames) {
-        displayNames = "Loading names..."
-    } else if (names && names.length > 0) {
-        displayNames = ""
-        names.forEach(name => {
-            displayNames = `${displayNames} ${name}`
-        })
+    const detectedNamesText = () => {
+
+        if (!mediaStream || !modelsLoaded) {
+            return null;
+        }
+
+        let displayNames = ""
+
+        if (loadingNames) {
+            displayNames = "Loading names..."
+        } else if (names && names.length == 0) {
+            displayNames = "No faces recognized"
+        } else if (names && names.length > 0) {
+            displayNames = "Recognized faces: "
+            names.forEach(name => displayNames = `${displayNames} ${name}`)
+        }
+
+        return <p className='text-small'>{displayNames}</p>
     }
 
     return (
-        <div className='vertical-layout'>
-            <p>{!modelsLoaded ? 'Loading models...' : null}</p>
-            <p>{!mediaStream ? 'Starting webcam...' : null}</p>
-            <div className="video-container">
-                <video
-                    ref={videoRef}
-                    width={videoWidth}
-                    height={videoHeight}
-                    preload="none" />
-                <canvas
-                    ref={canvasRef}
-                    width={videoWidth}
-                    height={videoHeight}
-                />
+        <div>
+            <div className='vertical-layout'>
+                <div className="video-container">
+                    <video
+                        ref={videoRef}
+                        width={videoWidth}
+                        height={videoHeight}
+                        preload="none" />
+                    <canvas
+                        ref={canvasRef}
+                        width={videoWidth}
+                        height={videoHeight}
+                    />
+                </div>
+                {detectedNamesText()}
+                <button onClick={recognizeFaces}>Detect face(s)</button>
             </div>
-            <p>{displayNames}</p>
-            <button onClick={recognizeFaces}>Detect face(s)</button>
+            <div className='app-overlay'>
+                {!modelsLoaded ? <div className='h-align'>
+                    <p className='text-small'>Loading models...</p>
+                </div> : null}
+                {!mediaStream ? <div className='h-align'>
+                    <p className='text-small'>Starting webcam...</p>
+                </div> : null}
+            </div>
         </div>
     );
 }
